@@ -1,9 +1,11 @@
 /*
-Version 0.2
+Version 0.3
 
 A more-or-less drop in replacement for jQuery that only supports a handful of very basic features.
 
-$$ supports basic chaining, so e.g. $$('.someClass').filter(':visible').on('keypress', fn).val('foo') works.
+Supported methods: parent, hide, show, css, removeClass, addClass, next, prev, val, $text, on, off, change, attr, removeAttr, prop, removeProp, trigger, click, fadeIn"
+
+$$ supports basic chaining, so e.g. $$('.someClass').$filter(':visible').on('keypress', fn).val('foo') works.
 
 When you call $$ on an element, you get the native DOM element back, augmented with a few jQuery-like methods
 
@@ -19,7 +21,7 @@ Implementation Tips:
 
 2) replace all instances of $ with $$
 
-3) Change any $$(...).filter or .each to $$(...).$filter or .$each (to avoid conflicts with native Array methods)
+3) Prefix .each, .filter, and .text with '$' for example $(...).$text(foo). This avoid conflicts with native properties.
 
 4) Test the heck out of it. $$ is not as complex or nuanced as jQuery, intentionally. It covers the happy path only.
 
@@ -28,6 +30,11 @@ Implementation Tips:
 var $$ = function jqueryLite(arg) {
   var displayDefaults = {};
 
+  function hyphenatedToCamelCase(ruleName) {
+    // from https://stackoverflow.com/a/6661012
+    return ruleName.replace(/-([a-z])/g, function (g) { return g[1].toUpperCase(); });
+  }
+
   // Takes a DOM element and adds some methods to it
   // Setters return the element for chaining, getters obviously don't
   function wrapOne(el) {
@@ -35,28 +42,14 @@ var $$ = function jqueryLite(arg) {
       console.log('bad el', el);
       return;
     }
-    el.hide = function() {
+    el.parent = function parent() {
+      return wrapOne(el.parentNode);
+    }
+    el.hide = function hide() {
       el.style.display = 'none';
       return el;
     };
-    el.removeClass = function(className) {
-      el.className = el.className.replace(
-        new RegExp('\\b' + className + '\\b', 'gi'),
-        ''
-      );
-      return el;
-    };
-    el.addClass = function(className) {
-      el.className += className;
-      return el;
-    };
-    el.next = function() {
-      return wrapOne(el.nextSibling);
-    };
-    el.prev = function() {
-      return wrapOne(el.previousSibling);
-    };
-    el.show = function() {
+    el.show = function show() {
       // Figure out what display value this type of element should have (inline/block/inline-block/etc)
       // Initially pinched from jQuery but then modified a bit
       function defaultDisplay(nodeName) {
@@ -77,7 +70,36 @@ var $$ = function jqueryLite(arg) {
       el.style.display = defaultDisplay(el.nodeName);
       return el;
     };
-    el.val = function(newValue) {
+    el.css = function css(rules) {
+      if (typeof rules === 'string') {
+        var style = el.style[hyphenatedToCamelCase(rules)];
+        if (parseInt(style) == style) {
+          return parseInt(style);
+        } else {
+          return style;
+        }
+      } else if (typeof rules === 'object') {
+        Object.keys(rules).forEach(function (rule) {
+          el.style[hyphenatedToCamelCase(rule)] = rules[rule];
+        });
+      }
+      return el;
+    };
+    el.removeClass = function removeClass(className) {
+      el.className = el.className.replace(new RegExp('\\b' + className + '\\b', 'gi'), '');
+      return el;
+    };
+    el.addClass = function addClass(className) {
+      el.className += className;
+      return el;
+    };
+    el.next = function next() {
+      return wrapOne(el.nextSibling);
+    };
+    el.prev = function prev() {
+      return wrapOne(el.previousSibling);
+    };
+    el.val = function val(newValue) {
       if (newValue) {
         el.value = newValue;
         return el;
@@ -85,8 +107,7 @@ var $$ = function jqueryLite(arg) {
         return el.value;
       }
     };
-    el.text = function(newValue) {
-      var prop;
+    el.$text = function text(newValue) {
       if (el.textContent !== undefined) {
         prop = 'textContent';
       } else {
@@ -99,7 +120,7 @@ var $$ = function jqueryLite(arg) {
         return el[prop];
       }
     };
-    el.on = function(eventName, handler) {
+    el.on = function on(eventName, handler) {
       eventName
         .split(' ')
         .map(function(eventName) {
@@ -116,7 +137,7 @@ var $$ = function jqueryLite(arg) {
         });
       return el;
     };
-    el.off = function(eventName, handler) {
+    el.off = function off(eventName, handler) {
       eventName
         .split(' ')
         .map(function(eventName) {
@@ -131,10 +152,10 @@ var $$ = function jqueryLite(arg) {
         });
       return el;
     };
-    el.change = function(handler) {
+    el.change = function change(handler) {
       return el.on('change', handler);
     };
-    el.attr = function(name, val) {
+    el.attr = function attr(name, val) {
       if (val !== undefined) {
         el.setAttribute(name, val);
         return el;
@@ -142,15 +163,15 @@ var $$ = function jqueryLite(arg) {
         return el.getAttribute(name);
       }
     };
-    el.removeAttr = function(name) {
+    el.removeAttr = function removeAttr(name) {
       el.removeAttribute(name);
       return el;
     };
-    el.prop = function(name, value) {
+    el.prop = function prop(name, value) {
       el[name] = value;
       return el;
     };
-    el.removeProp = function(name) {
+    el.removeProp = function removeProp(name) {
       // try/catch handles cases where IE balks (such as removing a property on window)
       try {
         this[name] = undefined;
@@ -158,7 +179,7 @@ var $$ = function jqueryLite(arg) {
       } catch (e) {}
       return el;
     };
-    el.trigger = function(eventName) {
+    el.trigger = function trigger(eventName) {
       if (document.createEvent) {
         var event = document.createEvent('HTMLEvents');
         event.initEvent(eventName, true, false);
@@ -168,6 +189,27 @@ var $$ = function jqueryLite(arg) {
       }
       return el;
     };
+    el.click = function click(callback) {
+      el.on('click', callback);
+      return el;
+    };
+    el.fadeIn = function fadeIn() {
+      el.style.opacity = 0;
+
+      var last = +new Date();
+      var tick = function() {
+        el.style.opacity = +el.style.opacity + (new Date() - last) / 400;
+        last = +new Date();
+
+        if (+el.style.opacity < 1) {
+          (window.requestAnimationFrame && requestAnimationFrame(tick)) || setTimeout(tick, 16);
+        }
+      };
+
+      tick();
+      return el;
+    };
+
     return el;
   }
 
@@ -181,11 +223,11 @@ var $$ = function jqueryLite(arg) {
     els = els.map(wrapOne);
 
     // Add some collection-only methods
-    els.$filter = function(selector) {
+    els.$filter = function $filter(selector) {
       function isVisible(el) {
         return el.offsetWidth > 0 || el.offsetHeight > 0;
       }
-      var matches = function(el, selector) {
+      var matches = function gatherMatches(el, selector) {
         var match =
           el.matches ||
           el.matchesSelector ||
@@ -219,7 +261,7 @@ var $$ = function jqueryLite(arg) {
         })
       );
     };
-    els.$each = function(fn) {
+    els.$each = function $each(fn) {
       els.forEach(function(el, i) {
         fn.call(el, i, el);
       });
@@ -280,11 +322,9 @@ var $$ = function jqueryLite(arg) {
 
   // Support $(document).ready
   if (arg && arg.constructor === document.constructor) {
-    return {
-      ready: function(callback) {
-        ready(callback);
-      }
-    };
+    var obj = wrapOne(arg);
+    obj.ready = ready;
+    return obj;
   }
 
   // Support some $. functions
