@@ -1,19 +1,15 @@
 /*
-Version 0.3
+Version 0.4
 
 A more-or-less drop in replacement for jQuery that only supports a handful of very basic features.
 
-Supported methods: parent, hide, show, css, removeClass, addClass, next, prev, val, $text, on, off, change, attr, removeAttr, prop, removeProp, trigger, click, fadeIn"
-
 $$ supports basic chaining, so e.g. $$('.someClass').$filter(':visible').on('keypress', fn).val('foo') works.
 
-When you call $$ on an element, you get the native DOM element back, augmented with a few jQuery-like methods
+Supported methods: parent, hide, show, css, removeClass, addClass, next, prev, val, $text, on, off, click, change, attr, removeAttr, prop, removeProp, trigger, fadeIn, fadeTo
 
-So you can do this, as if you'd called getElementById:
-$$('#foo').style.display, or $$('#foo').value
+Caveats:
 
-as well this, as if it's a jQuery object:
-$$('#foo').hide(), or $$('#foo').attr(...)
+Height: Returns a value for $(window).height and $(document).height but no guarantees it's the same as what jQuery would have returned.
 
 Implementation Tips:
 
@@ -72,6 +68,7 @@ var $$ = function jqueryLite(arg) {
     };
     el.css = function css(rules) {
       if (typeof rules === 'string') {
+        // treat as getter
         var style = el.style[hyphenatedToCamelCase(rules)];
         if (parseInt(style) == style) {
           return parseInt(style);
@@ -79,6 +76,7 @@ var $$ = function jqueryLite(arg) {
           return style;
         }
       } else if (typeof rules === 'object') {
+        // set props
         Object.keys(rules).forEach(function (rule) {
           el.style[hyphenatedToCamelCase(rule)] = rules[rule];
         });
@@ -120,6 +118,23 @@ var $$ = function jqueryLite(arg) {
         return el[prop];
       }
     };
+    el.height = function height(newValue) {
+      var isWindowOrDocument = (el.constructor === document.constructor || el.constructor === window.constructor);
+      if (isWindowOrDocument || !newValue) {
+        // Getter
+        if (isWindowOrDocument) {
+          // Have to do some magic. Via https://gist.github.com/joshcarr/2f861bd37c3d0df40b30
+          return window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
+        } else {
+          // Assume it's a standard element
+          return parseFloat(getComputedStyle(el, null).height.replace("px", ""))
+        }
+      } else {
+        // Setter
+        el.style.height = newValue;
+        return el;
+      }
+    };
     el.on = function on(eventName, handler) {
       eventName
         .split(' ')
@@ -151,6 +166,9 @@ var $$ = function jqueryLite(arg) {
           }
         });
       return el;
+    };
+    el.click = function click(handler) {
+      return el.on('click', handler);
     };
     el.change = function change(handler) {
       return el.on('change', handler);
@@ -189,11 +207,7 @@ var $$ = function jqueryLite(arg) {
       }
       return el;
     };
-    el.click = function click(callback) {
-      el.on('click', callback);
-      return el;
-    };
-    el.fadeIn = function fadeIn() {
+    el.fadeTo = function fadeTo(targetOpacity) {
       el.style.opacity = 0;
 
       var last = +new Date();
@@ -201,13 +215,16 @@ var $$ = function jqueryLite(arg) {
         el.style.opacity = +el.style.opacity + (new Date() - last) / 400;
         last = +new Date();
 
-        if (+el.style.opacity < 1) {
+        if (+el.style.opacity < targetOpacity) {
           (window.requestAnimationFrame && requestAnimationFrame(tick)) || setTimeout(tick, 16);
         }
       };
 
       tick();
       return el;
+    };
+    el.fadeIn = function (/* duration unsupported */) {
+      return el.fadeTo(1);
     };
 
     return el;
