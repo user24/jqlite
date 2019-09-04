@@ -1,15 +1,18 @@
 /*
 Version 0.4
 
-A more-or-less drop in replacement for jQuery that only supports a handful of very basic features.
+A barebones replacement for jQuery that only supports a handful of very basic features.
 
 $$ supports basic chaining, so e.g. $$('.someClass').$filter(':visible').on('keypress', fn).val('foo') works.
 
-Supported methods: parent, hide, show, css, removeClass, addClass, next, prev, val, $text, on, off, click, change, attr, removeAttr, prop, removeProp, trigger, fadeIn, fadeTo
+Supported methods: parent, hide, show, css, removeClass, addClass, next, prev, val, $text, on, off, click, change, attr, removeAttr, prop, removeProp, trigger, fadeIn, fadeTo, fadeOut
 
 Caveats:
 
 Height: Returns a value for $(window).height and $(document).height but no guarantees it's the same as what jQuery would have returned.
+fadeOut just hides an element instead of fading.
+fadeIn/fadeTo don't support fade duration or callbacks / then syntax
+each, filter, and text need to be prefixed with $ to avoid conflicts with native properties
 
 Implementation Tips:
 
@@ -17,7 +20,7 @@ Implementation Tips:
 
 2) replace all instances of $ with $$
 
-3) Prefix .each, .filter, and .text with '$' for example $(...).$text(foo). This avoid conflicts with native properties.
+3) Prefix .each, .filter, and .text with '$' for example $(...).$text(foo).
 
 4) Test the heck out of it. $$ is not as complex or nuanced as jQuery, intentionally. It covers the happy path only.
 
@@ -207,8 +210,8 @@ var $$ = function jqueryLite(arg) {
       }
       return el;
     };
-    el.fadeTo = function fadeTo(targetOpacity) {
-      el.style.opacity = 0;
+    el.fadeTo = function fadeTo(fadeDurationUnsupported, targetOpacity) {
+      el.show();
 
       var last = +new Date();
       var tick = function() {
@@ -223,8 +226,13 @@ var $$ = function jqueryLite(arg) {
       tick();
       return el;
     };
-    el.fadeIn = function (/* duration unsupported */) {
-      return el.fadeTo(1);
+    el.fadeIn = function (fadeDurationUnsupported) {
+      return el.fadeTo(fadeDurationUnsupported, 1);
+    };
+    el.fadeOut = function (fadeDurationUnsupported, callback) {
+      el.hide();
+      callback();
+      return el;
     };
 
     return el;
