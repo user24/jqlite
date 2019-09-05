@@ -1,5 +1,5 @@
 /*
-Version 0.4
+Version 0.5
 
 A barebones replacement for jQuery that only supports a handful of very basic features.
 
@@ -11,7 +11,7 @@ Caveats:
 
 Height: Returns a value for $(window).height and $(document).height but no guarantees it's the same as what jQuery would have returned.
 fadeOut just hides an element instead of fading.
-fadeIn/fadeTo don't support fade duration or callbacks / then syntax
+fadeIn/fadeTo don't support fade duration
 each, filter, and text need to be prefixed with $ to avoid conflicts with native properties
 
 Implementation Tips:
@@ -210,7 +210,7 @@ var $$ = function jqueryLite(arg) {
       }
       return el;
     };
-    el.fadeTo = function fadeTo(fadeDurationUnsupported, targetOpacity) {
+    el.fadeTo = function fadeTo(fadeDurationUnsupported, targetOpacity, callback) {
       el.show();
 
       var last = +new Date();
@@ -220,14 +220,16 @@ var $$ = function jqueryLite(arg) {
 
         if (+el.style.opacity < targetOpacity) {
           (window.requestAnimationFrame && requestAnimationFrame(tick)) || setTimeout(tick, 16);
+        } else if (typeof callback === 'function') {
+          callback();
         }
       };
 
       tick();
       return el;
     };
-    el.fadeIn = function (fadeDurationUnsupported) {
-      return el.fadeTo(fadeDurationUnsupported, 1);
+    el.fadeIn = function (fadeDurationUnsupported, callback) {
+      return el.fadeTo(fadeDurationUnsupported, 1, callback);
     };
     el.fadeOut = function (fadeDurationUnsupported, callback) {
       el.hide();
