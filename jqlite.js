@@ -233,7 +233,9 @@ var $$ = function jqueryLite(arg) {
     };
     el.fadeOut = function (fadeDurationUnsupported, callback) {
       el.hide();
-      callback();
+      if (typeof callback === 'function') {
+        callback();
+      }
       return el;
     };
 
