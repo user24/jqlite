@@ -19,7 +19,8 @@ and we can replace jQuery with jqlite, removing ~80 KB of code when minified.
 
 
 Rationale: a lot of the time, you're only using 5% of jQuery. Why bother with the rest?
-Real reason: it's often quicker to replace jQuery-dependent code with jqlite-dependent code, instead of actually converting to pure vanilla JS. Plus some of jQuery's helper methods are genuinely helpful and easier than vanilla JS.
+
+Real reason: it's often quicker to replace jQuery-dependent code with jqlite-dependent code, instead of actually converting to pure vanilla JS. Plus some of jQuery's helper methods are genuinely helpful and easier than vanilla JS. Also, the code for jqlite is a lot easier to understand than jQuery, so if you're looking for a "vanilla JS equivalent of jQuery's foo function", this might be a better starting point than diving into jQuery's code.
 
 $$ supports basic chaining, so e.g. $$('.someClass').$filter(':visible').on('keypress', fn).val('foo') works.
 
