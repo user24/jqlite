@@ -1,11 +1,11 @@
 /*
-Version 0.5
+Version 0.6
 
 A barebones replacement for jQuery that only supports a handful of very basic features.
 
 $$ supports basic chaining, so e.g. $$('.someClass').$filter(':visible').on('keypress', fn).val('foo') works.
 
-Supported methods: parent, hide, show, css, removeClass, addClass, next, prev, val, $text, on, off, click, change, attr, removeAttr, prop, removeProp, trigger, fadeIn, fadeTo, fadeOut
+Supported methods: parent, hide, show, css, removeClass, addClass, next, prev, val, $text, on, off, click, change, attr, removeAttr, prop, removeProp, trigger, fadeIn, fadeTo, fadeOut, getJSON, ajax (very partially)
 
 Caveats:
 
@@ -141,14 +141,14 @@ var $$ = function jqueryLite(arg) {
     el.on = function on(eventName, handler) {
       eventName
         .split(' ')
-        .map(function(eventName) {
+        .map(function (eventName) {
           return eventName.trim();
         })
-        .forEach(function(eventName) {
+        .forEach(function (eventName) {
           if (el.addEventListener) {
             el.addEventListener(eventName, handler);
           } else {
-            el.attachEvent('on' + eventName, function() {
+            el.attachEvent('on' + eventName, function () {
               handler.call(el);
             });
           }
@@ -158,10 +158,10 @@ var $$ = function jqueryLite(arg) {
     el.off = function off(eventName, handler) {
       eventName
         .split(' ')
-        .map(function(eventName) {
+        .map(function (eventName) {
           return eventName.trim();
         })
-        .forEach(function(eventName) {
+        .forEach(function (eventName) {
           if (el.removeEventListener) {
             el.removeEventListener(eventName, handler);
           } else {
@@ -197,7 +197,7 @@ var $$ = function jqueryLite(arg) {
       try {
         this[name] = undefined;
         delete this[name];
-      } catch (e) {}
+      } catch (e) { }
       return el;
     };
     el.trigger = function trigger(eventName) {
@@ -214,7 +214,7 @@ var $$ = function jqueryLite(arg) {
       el.show();
 
       var last = +new Date();
-      var tick = function() {
+      var tick = function () {
         el.style.opacity = +el.style.opacity + (new Date() - last) / 400;
         last = +new Date();
 
@@ -264,7 +264,7 @@ var $$ = function jqueryLite(arg) {
           el.mozMatchesSelector ||
           el.webkitMatchesSelector ||
           el.oMatchesSelector ||
-          function() {
+          function () {
             console.error(
               '.$filter: no matchesSelector support in this browser!'
             );
@@ -285,13 +285,13 @@ var $$ = function jqueryLite(arg) {
         }
       };
       return wrapMany(
-        els.filter(function(el) {
+        els.filter(function (el) {
           return matches(el, selector);
         })
       );
     };
     els.$each = function $each(fn) {
-      els.forEach(function(el, i) {
+      els.forEach(function (el, i) {
         fn.call(el, i, el);
       });
       return els;
@@ -299,15 +299,15 @@ var $$ = function jqueryLite(arg) {
 
     // Augment entire array with $$ methods to allow $('.foo').hide() to hide all .foo elements
     // For each supported method;
-    Object.keys(wrapOne({})).forEach(function(method) {
+    Object.keys(wrapOne({})).forEach(function (method) {
       // Apply this method to the whole group
-      els[method] = function() {
+      els[method] = function () {
         // When called, store the original arguments
         var originalArgs = Array.prototype.slice.call(arguments);
         // And then apply those arguments to each element
         // we also wrapMany on the mapped els, to allow further chaining (e.g. $().hide().$each )
         return wrapMany(
-          els.map(function(el) {
+          els.map(function (el) {
             return wrapOne(el)[method].apply(undefined, originalArgs);
           })
         );
@@ -323,7 +323,7 @@ var $$ = function jqueryLite(arg) {
     } else if (document.addEventListener) {
       document.addEventListener('DOMContentLoaded', fn);
     } else {
-      document.attachEvent('onreadystatechange', function() {
+      document.attachEvent('onreadystatechange', function () {
         if (document.readyState !== 'loading') fn();
       });
     }
@@ -355,9 +355,43 @@ var $$ = function jqueryLite(arg) {
     obj.ready = ready;
     return obj;
   }
+};
 
-  // Support some $. functions
-  return {
-    getJSON: function getJSON() {}
-  };
+
+// Support some $. functions
+$$.ajax = function ajax(url, opts) {
+  if (arguments.length === 1) {
+    opts = url;
+    url = undefined;
+  }
+  if (!opts.method) {
+    opts.method = "get";
+  }
+
+  function reqListener() {
+    if (opts.dataType === "json") {
+      opts.success(JSON.parse(this.responseText || null));
+    } else {
+      opts.success(this.responseText);
+    }
+  }
+  var oReq = new XMLHttpRequest();
+  oReq.addEventListener("load", reqListener);
+  oReq.open(opts.method, opts.url);
+  oReq.send();
+};
+
+$$.getJSON = function getJSON(url, data, success) {
+  // Handle two-argument signature
+  if (typeof data === 'function' && arguments.length === 2) {
+    success = data;
+    data = undefined;
+  }
+  // Pass through to our $$.ajax method
+  return $$.ajax({
+    dataType: "json",
+    url: url,
+    data: data,
+    success: success
+  });
 };
