@@ -39,6 +39,7 @@ Finally, the code for jqlite is a lot easier to understand than jQuery, so if yo
 * fadeOut just hides an element instead of fading.
 * fadeIn/fadeTo don't support fade duration
 * ajax support is very basic
+* The object returned by jqlite is an augmented DOM element, i.e. $$('#foo') will have native DOM properties like .value and .setAttribute, as well as jQuery-esque methods like .val and .parent. This is so that you can start to re-introduce vanilla JS more easily, instead of having to jump through hoops to get to the DOM API.
 
 ## Implementation Tips:
 
