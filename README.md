@@ -5,6 +5,19 @@ Version 0.6
 
 A barebones almost-drop-in replacement for jQuery that only supports a handful of very basic features.
 
+Example:
+
+````
+$('.selector').css('color', 'red').parent().show();
+````
+
+can become
+````
+$$('.selector').css('color', 'red').parent().show();
+````
+and we can replace jQuery with jqlite, removing ~80 KB of code when minified.
+
+
 Rationale: a lot of the time, you're only using 5% of jQuery. Why bother with the rest?
 Real reason: it's often quicker to replace jQuery-dependent code with jqlite-dependent code, instead of actually converting to pure vanilla JS. Plus some of jQuery's helper methods are genuinely helpful and easier than vanilla JS.
 
