@@ -1,9 +1,12 @@
 # jqlite
-Supports some basics of the jQuery API without actually being jQuery
+Supports some basics of the jQuery API without actually being jQuery.
 
 Version 0.6
 
-A barebones replacement for jQuery that only supports a handful of very basic features.
+A barebones almost-drop-in replacement for jQuery that only supports a handful of very basic features.
+
+Rationale: a lot of the time, you're only using 5% of jQuery. Why bother with the rest?
+Real reason: it's often quicker to replace jQuery-dependent code with jqlite-dependent code, instead of actually converting to pure vanilla JS. Plus some of jQuery's helper methods are genuinely helpful and easier than vanilla JS.
 
 $$ supports basic chaining, so e.g. $$('.someClass').$filter(':visible').on('keypress', fn).val('foo') works.
 
@@ -11,10 +14,10 @@ Supported methods: parent, hide, show, css, removeClass, addClass, next, prev, v
 
 Caveats:
 
+each, filter, and text need to be prefixed with $ to avoid conflicts with native properties, i.e. $$(selector).$each
 Height: Returns a value for $(window).height and $(document).height but no guarantees it's the same as what jQuery would have returned.
 fadeOut just hides an element instead of fading.
 fadeIn/fadeTo don't support fade duration
-each, filter, and text need to be prefixed with $ to avoid conflicts with native properties, i.e. $$(selector).$each
 ajax support is very basic
 
 Implementation Tips:
