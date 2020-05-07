@@ -1,5 +1,10 @@
+# Development discontinued
+
+Because I found https://zeptojs.com/ which is the same thing.
+
 # jqlite
 Version 0.6
+
 
 A barebones almost-drop-in replacement for jQuery that only supports a handful of very basic features.
 
